@@ -56,9 +56,8 @@ Table S5](https://www.nature.com/articles/s41588-022-01024-z).
 ## Analysis and downloads
 
 For each profile, AUROC compares the supplied specificity scores of matched
-target genes against the non-target genes in the background. Ties receive
-half credit. Two-sided Mann–Whitney p-values use an asymptotic normal
-approximation with tie and continuity corrections. Benjamini–Hochberg FDR
+target genes against the non-target genes in the background. The two group sizes are matched
+target genes and non-target background genes. Benjamini–Hochberg FDR
 is calculated from full-precision p-values across all profiles in the selected
 matrix. AUROC above 0.5 indicates higher specificity scores in the target set.
 

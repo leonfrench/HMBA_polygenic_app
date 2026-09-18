@@ -8,7 +8,8 @@ import re
 
 import numpy as np
 import pandas as pd
-from scipy.stats import mannwhitneyu
+from scipy.special import ndtr
+from scipy.stats import rankdata
 
 
 @dataclass(frozen=True)
@@ -16,6 +17,7 @@ class RankMatrix:
     genes: np.ndarray
     profiles: tuple[str, ...]
     ranks: np.ndarray
+    auroc_ranks: np.ndarray | None = None
 
 
 @dataclass(frozen=True)
@@ -57,7 +59,14 @@ def load_rank_matrix(path: Path) -> RankMatrix:
         raise ValueError(f"{path.name} contains missing or non-finite rank values.")
     genes.setflags(write=False)
     ranks.setflags(write=False)
-    return RankMatrix(genes=genes, profiles=tuple(header[1:]), ranks=ranks)
+    # Convert minimum ranks in the source files to average ranks once, cached
+    # with the matrix by the app. Preserve original ranks for the heatmap.
+    auroc_ranks = rankdata(ranks, axis=0, method="average")
+    auroc_ranks.setflags(write=False)
+    return RankMatrix(
+        genes=genes, profiles=tuple(header[1:]), ranks=ranks,
+        auroc_ranks=auroc_ranks,
+    )
 
 
 def load_ortholog_map(path: Path) -> dict[str, dict[str, tuple[str, ...]]]:
@@ -90,6 +99,70 @@ def convert_to_human(
     for gene in genes:
         converted.extend(species_map.get(gene, ()))
     return unique_in_order(converted)
+
+
+def auroc_analytic_ranked_profiles(ranked_profiles, target_indices) -> np.ndarray:
+    """Vectorized EGAD rank-sum AUROC (Sara Ballouz).
+
+    Rows are genes and columns are profiles. Inputs must already be ascending
+    within-column ranks (average ranks for ties), with aligned binary labels.
+    Returns one AUROC per column; does not mutate either input.
+    Source: https://github.com/sarbal/EGAD/blob/master/EGAD/R/auroc_analytic.R
+    """
+    ranks = np.asarray(ranked_profiles, dtype=np.float64)
+    labels = np.asarray(target_indices, dtype=np.float64)
+    if ranks.ndim != 2 or labels.ndim != 1:
+        raise ValueError("Expected a 2D rank matrix and a 1D label vector.")
+    if len(labels) != ranks.shape[0]:
+        raise ValueError("Index length does not equal input table row count!")
+    if not np.isin(labels, [0, 1]).all():
+        raise ValueError("Target labels must be binary (0 or 1).")
+    n_positive = labels.sum()
+    n_negative = len(labels) - n_positive
+    if n_positive == 0 or n_negative == 0:
+        raise ValueError("At least one positive and one negative are required.")
+    summed_ranks = labels @ ranks
+    return (summed_ranks / n_positive - (n_positive + 1) / 2) / n_negative
+
+
+def auroc_analytic(scores, labels) -> float:
+    """Single-profile version; scores must already be ascending ranks."""
+    scores = np.asarray(scores, dtype=np.float64)
+    if scores.ndim != 1:
+        raise ValueError("Expected a 1D rank vector.")
+    return float(auroc_analytic_ranked_profiles(scores[:, None], labels)[0])
+
+
+def get_p_from_auc(n_x, n_y, auc, alternative="two.sided", correct=True):
+    """Vectorized translation of get_p_from_AUC, without tie correction.
+
+    n_x is the positive count; n_y is the negative count, not the total
+    background size. Accepts a scalar or array of AUROCs.
+    """
+    n_x, n_y = float(n_x), float(n_y)
+    if not np.isfinite([n_x, n_y]).all() or n_x <= 0 or n_y <= 0:
+        raise ValueError("Both group sizes must be positive and finite.")
+    auc = np.asarray(auc, dtype=np.float64)
+    if not np.isfinite(auc).all() or ((auc < 0) | (auc > 1)).any():
+        raise ValueError("AUROC must be finite and between 0 and 1.")
+    centered = auc * (n_x * n_y) - n_x * n_y / 2
+    sigma = np.sqrt((n_x * n_y / 12) * (n_x + n_y + 1))
+    if alternative == "two.sided":
+        correction = np.sign(centered) * 0.5
+    elif alternative == "greater":
+        correction = 0.5
+    elif alternative == "less":
+        correction = -0.5
+    else:
+        raise ValueError("alternative must be 'two.sided', 'greater', or 'less'.")
+    z = (centered - (correction if correct else 0)) / sigma
+    if alternative == "less":
+        p = ndtr(z)
+    elif alternative == "greater":
+        p = ndtr(-z)
+    else:
+        p = 2 * ndtr(-np.abs(z))
+    return float(p) if p.ndim == 0 else p
 
 
 def _significant(value: float, digits: int = 3) -> float:
@@ -156,24 +229,15 @@ def run_auroc_analysis(
     if n_negative == 0:
         raise ValueError("The background must contain at least one non-target gene.")
 
-    # Mann–Whitney ranks the supplied scores within each profile and handles ties.
-    # Work one profile at a time to bound memory for the regional matrix.
-    aucs = np.empty(len(matrix.profiles), dtype=np.float64)
-    p_values = np.empty_like(aucs)
-    for column in range(len(matrix.profiles)):
-        if np.ptp(ranks[:, column]) == 0:
-            aucs[column] = 0.5
-            p_values[column] = 1.0
-            continue
-        test = mannwhitneyu(
-            ranks[target_mask, column],
-            ranks[~target_mask, column],
-            alternative="two-sided",
-            method="asymptotic",
-            use_continuity=True,
-        )
-        aucs[column] = test.statistic / (n_target * n_negative)
-        p_values[column] = test.pvalue
+    # A custom universe needs its own within-profile ranks. Keep the heatmap
+    # on the original supplied scale.
+    analysis_ranks = (
+        matrix.auroc_ranks
+        if background_genes is None and matrix.auroc_ranks is not None
+        else rankdata(ranks, axis=0, method="average")
+    )
+    aucs = auroc_analytic_ranked_profiles(analysis_ranks, target_mask)
+    p_values = get_p_from_auc(n_target, n_negative, aucs)
 
     rounded_aucs = np.asarray([_significant(value) for value in aucs])
     rounded_p_values = np.asarray([_significant(value) for value in p_values])

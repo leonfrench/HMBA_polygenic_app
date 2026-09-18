@@ -351,8 +351,8 @@ if saved is not None:
     )
     st.caption(
         "AUROC compares target genes against non-target background genes using "
-        "the supplied specificity scores. Two-sided Mann–Whitney p-values use "
-        "a tie- and continuity-corrected normal approximation. "
+        "within-profile rank sums. Two-sided p-values use the AUROC-based "
+        "normal approximation with continuity correction and no tie correction. "
         "FDR values use the Benjamini-Hochberg correction across all selected profiles applied to "
         "full-precision p-values."
     )
