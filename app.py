@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import base64
+from functools import partial
 from io import BytesIO
 import os
 import re
@@ -323,21 +323,34 @@ if saved is not None:
         table_for_display["Subclass"] = table_for_display["Subclass"].str.replace(
             r" \(ID:\d+\)$", "", regex=True
         )
-    csv_data = base64.b64encode(
-        results_table.to_csv(index=False).encode("utf-8")
-    ).decode("ascii")
-    pdf_data = base64.b64encode(
-        create_heatmap_pdf(saved["heatmap"], dataset)
-    ).decode("ascii")
     download_prefix = f"hmba_v0.5_human_{DATASETS[dataset][1]}"
-    st.markdown(
-        f'<a href="data:text/csv;base64,{csv_data}" '
-        f'download="{download_prefix}_results.csv">Download as CSV</a>'
-        '&nbsp;&nbsp; · &nbsp;&nbsp;'
-        f'<a href="data:application/pdf;base64,{pdf_data}" '
-        f'download="{download_prefix}_heatmap.pdf">Download heatmap (PDF)</a>',
-        unsafe_allow_html=True,
-    )
+    st.html("""
+        <style>
+        .st-key-result_downloads button {
+            color: #0068c9;
+            text-decoration: underline;
+            padding: 0;
+            min-height: 0;
+        }
+        </style>
+    """)
+    with st.container(key="result_downloads", horizontal=True):
+        st.download_button(
+            "Download as CSV",
+            data=results_table.to_csv(index=False).encode("utf-8"),
+            file_name=f"{download_prefix}_results.csv",
+            mime="text/csv",
+            type="tertiary",
+            on_click="ignore",
+        )
+        st.download_button(
+            "Download heatmap (PDF)",
+            data=partial(create_heatmap_pdf, saved["heatmap"], dataset),
+            file_name=f"{download_prefix}_heatmap.pdf",
+            mime="application/pdf",
+            type="tertiary",
+            on_click="ignore",
+        )
 
     display_table = table_for_display.style.format(
         {"AUROC": lambda value: f"{value:.3g}",

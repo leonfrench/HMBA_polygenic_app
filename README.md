@@ -63,6 +63,7 @@ matrix. AUROC above 0.5 indicates higher specificity scores in the target set.
 
 The analysis runs immediately and updates when inputs change. Download the
 results as CSV or a PDF heatmap with complete-linkage Euclidean clustering of
-genes and profiles. The heatmap retains the supplied specificity scores even
+genes and profiles. Clustering and PDF generation run only when the heatmap
+download is clicked; generated PDFs are cached for identical inputs. The heatmap retains the supplied specificity scores even
 with a custom background. Download filenames identify the atlas and grouping.
 The regional heatmap includes all 1,357 profiles and is best inspected by zooming.
