@@ -2,7 +2,7 @@
 
 This Streamlit app compares a human gene set's expression-specificity scores
 across profiles from the **Human and Mammalian Brain Atlas (HMBA), v0.5**.
-Choose Subclass (the default), Subclass by brain region, or Brain region in the sidebar.
+Choose Subclass (the default), Subclass by brain region, Brain region, or Class in the sidebar.
 
 ## Data and attribution
 
@@ -15,13 +15,14 @@ Keep these files in `data/` (no decompression is needed):
 
 | Grouping | File | Genes | Profiles |
 | --- | --- | ---: | ---: |
+| Class | `WB_HMBA_Human_AIT_class_rank.csv.gz` | 22,738 | 42 |
 | Subclass | `WB_HMBA_Human_AIT_subclass_rank.csv.gz` | 22,738 | 387 |
 | Brain region | `WB_HMBA_Human_AIT_brain_region_rank.csv.gz` | 22,738 | 16 |
 | Subclass by brain region | `WB_HMBA_Human_AIT_brain_region_subclass_pseudobulk_ranked.csv.gz` | 22,737 | 1,357 |
 
 Each file starts with `gene_symbol`, followed by numeric profile columns.
 Regional matrix columns use `brain region | subclass` labels. Results and CSV
-downloads split these into Brain region and Subclass columns. The displayed table omits subclass IDs. CSV downloads and heatmaps retain
+downloads split these into Brain region and Subclass columns. The displayed table omits subclass and class IDs. CSV downloads and heatmaps retain
 them after the name as `Microglia_NN (ID:408)`. Brain-region-only results display a Brain region column.
 The app formats labels in memory without modifying the source CSVs. The updated
 matrices contain rank scores ranging from 1 to the number of genes in each file.

@@ -37,6 +37,7 @@ DATASETS = {
         "brain_region_subclass",
     ),
     "Brain region": ("WB_HMBA_Human_AIT_brain_region_rank.csv.gz", "brain_region"),
+    "Class": ("WB_HMBA_Human_AIT_class_rank.csv.gz", "class"),
 }
 SOURCE_URL = "https://github.com/AllenInstitute/HMBA_WB_Atlas"
 
@@ -150,7 +151,7 @@ def format_results_table(table: pd.DataFrame, dataset: str) -> pd.DataFrame:
     elif dataset == "Brain region":
         formatted.insert(0, "Brain region", labels)
     else:
-        formatted.insert(0, "Subclass", labels.map(format_subclass))
+        formatted.insert(0, dataset, labels.map(format_subclass))
     return formatted
 
 
@@ -213,7 +214,7 @@ st.title("HMBA human polygenic expression specificity tester")
 with st.sidebar:
     st.markdown(
         "**Test whether a gene set has higher expression-specificity ranks "
-        "in human brain subclasses or regions using the HMBA v0.5 atlas.**"
+        "in human brain classes, subclasses, or regions using the HMBA v0.5 atlas.**"
     )
     dataset = st.selectbox("Profile grouping:", options=list(DATASETS))
     species = st.selectbox(
@@ -319,10 +320,11 @@ if saved is not None:
     st.write(f"Background genes: {saved['background']}")
 
     table_for_display = results_table.copy()
-    if "Subclass" in table_for_display.columns:
-        table_for_display["Subclass"] = table_for_display["Subclass"].str.replace(
-            r" \(ID:\d+\)$", "", regex=True
-        )
+    for label_column in ("Subclass", "Class"):
+        if label_column in table_for_display.columns:
+            table_for_display[label_column] = table_for_display[label_column].str.replace(
+                r" \(ID:\d+\)$", "", regex=True
+            )
     download_prefix = f"hmba_v0.5_human_{DATASETS[dataset][1]}"
     st.html("""
         <style>
