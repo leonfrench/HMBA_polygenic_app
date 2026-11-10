@@ -89,3 +89,8 @@ References: [HMBA atlas](https://github.com/AllenInstitute/HMBA_WB_Atlas),
 [Allen anatomical acronym dictionary](https://api.brain-map.org/api/v2/structure_graph_download/1.json),
 [Yao et al. taxonomy](https://www.nature.com/articles/s41586-023-06812-z), and
 [cortical abbreviation definitions](https://datta.hms.harvard.edu/wp-content/uploads/2025/08/Zeppelli-et-al.pdf).
+
+Expanded names omit padding around slashes (for example, `Lamp5/Lhx6`).
+The main app and dataframe use the bundled Roboto Condensed font; headings and
+sidebar retain the standard sans-serif font. Streamlit static serving is enabled
+for `static/RobotoCondensed.ttf`. Its SIL Open Font License is bundled alongside it.

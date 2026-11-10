@@ -1,2 +1,16 @@
+[server]
+enableStaticServing = true
+
 [theme]
 base = "light"
+font = "Roboto Condensed, sans-serif"
+headingFont = "sans-serif"
+
+[[theme.fontFaces]]
+family = "Roboto Condensed"
+url = "app/static/RobotoCondensed.ttf"
+weight = "100 900"
+style = "normal"
+
+[theme.sidebar]
+font = "sans-serif"
