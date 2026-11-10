@@ -5,6 +5,7 @@ from __future__ import annotations
 from functools import partial
 from io import BytesIO
 import os
+import json
 import re
 from pathlib import Path
 import tempfile
@@ -152,6 +153,15 @@ def format_results_table(table: pd.DataFrame, dataset: str) -> pd.DataFrame:
         formatted.insert(0, "Brain region", labels)
     else:
         formatted.insert(0, dataset, labels.map(format_subclass))
+    if dataset in ("Subclass", "Subclass by brain region"):
+        name_map = json.loads(
+            (DATA_DIR / "subclass_expanded_names.json").read_text()
+        )
+        subclass_labels = parts[1] if dataset == "Subclass by brain region" else labels
+        formatted.insert(
+            1, "Expanded subclass name",
+            subclass_labels.map(name_map).fillna(subclass_labels),
+        )
     return formatted
 
 

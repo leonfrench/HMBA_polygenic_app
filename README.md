@@ -68,3 +68,24 @@ genes and profiles. Clustering and PDF generation run only when the heatmap
 download is clicked; generated PDFs are cached for identical inputs. The heatmap retains the supplied specificity scores even
 with a custom background. Download filenames identify the atlas and grouping.
 The regional heatmap includes all 1,357 profiles and is best inspected by zooming.
+
+## Expanded subclass names
+
+Subclass and Subclass by brain region results show an Expanded subclass name
+column alongside the original short Subclass column. CSV result downloads include
+both names; heatmap labels remain short. The display mapping is stored in
+`data/subclass_expanded_names.json` and is keyed by the exact original subclass
+label (including its ID), so it does not depend on row order. An unrecognized label
+falls back to its original text. Class and Brain region views are unchanged.
+
+Expanded names retain molecular markers to distinguish subclasses and use short
+dashes. Per the reviewed layer legend, OB-in, OB-out and OB-mi are interpreted as
+the main olfactory bulb inner plexiform, outer plexiform and mitral layers,
+respectively. These layer correspondences are user-approved assumptions.
+The descriptions expand inherited atlas terminology rather than asserting new
+human anatomical locations; other uncertain expansions retain provisional notes.
+
+References: [HMBA atlas](https://github.com/AllenInstitute/HMBA_WB_Atlas),
+[Allen anatomical acronym dictionary](https://api.brain-map.org/api/v2/structure_graph_download/1.json),
+[Yao et al. taxonomy](https://www.nature.com/articles/s41586-023-06812-z), and
+[cortical abbreviation definitions](https://datta.hms.harvard.edu/wp-content/uploads/2025/08/Zeppelli-et-al.pdf).
